@@ -1,7 +1,8 @@
 # Student Management System
 
 A full-stack web application for managing student records built with Node.js, Express.js, MongoDB, and EJS templating engine.
-
+## 🌐 Live Demo
+**[🚀 View Live Application](https://studenthub-6uwd.onrender.com)**
 ## Features
 
 - **View Students**: Display all student records in a user-friendly interface
