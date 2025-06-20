@@ -1,0 +1,299 @@
+<!-- views/edit.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Student - Student Management</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-edit"></i> Edit Student</h1>
+            <p>Update student information</p>
+        </div>
+
+        <div class="nav-section">
+            <a href="/" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Students
+            </a>
+        </div>
+
+        <div class="main-content">
+            <div class="glass-card">
+                <div class="form-header">
+                    <i class="fas fa-user-edit"></i>
+                    <h2>Update Student Information</h2>
+                    <p class="form-subtitle">Editing: <strong><%= student.name %></strong></p>
+                </div>
+
+                <form action="/edit/<%= student._id %>" method="POST" class="modern-form" id="edit-form">
+                    <div class="form-group">
+                        <label for="name">
+                            <i class="fas fa-user"></i> Full Name
+                        </label>
+                        <input 
+                            type="text" 
+                            id="name" 
+                            name="name" 
+                            class="form-control" 
+                            value="<%= student.name %>" 
+                            required 
+                            placeholder="Enter student's full name"
+                            autocomplete="name"
+                        >
+                        <div class="form-error" id="name-error"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">
+                            <i class="fas fa-envelope"></i> Email Address
+                        </label>
+                        <input 
+                            type="email" 
+                            id="email" 
+                            name="email" 
+                            class="form-control" 
+                            value="<%= student.email || '' %>" 
+                            placeholder="Enter email address (optional)"
+                            autocomplete="email"
+                        >
+                        <div class="form-error" id="email-error"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="course">
+                            <i class="fas fa-book"></i> Course
+                        </label>
+                        <input 
+                            type="text" 
+                            id="course" 
+                            name="course" 
+                            class="form-control" 
+                            value="<%= student.course || '' %>" 
+                            placeholder="Enter course name (optional)"
+                            list="course-suggestions"
+                        >
+                        <datalist id="course-suggestions">
+                            <option value="Computer Science">
+                            <option value="Mathematics">
+                            <option value="Physics">
+                            <option value="Chemistry">
+                            <option value="Biology">
+                            <option value="Engineering">
+                            <option value="Business Administration">
+                            <option value="English Literature">
+                        </datalist>
+                        <div class="form-error" id="course-error"></div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-success btn-primary-action">
+                            <i class="fas fa-save"></i> Update Student
+                        </button>
+                        <a href="/" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                        <button type="button" class="btn btn-danger" onclick="confirmDelete('<%= student._id %>', '<%= student.name %>')">
+                            <i class="fas fa-trash"></i> Delete Student
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Student Preview Card -->
+            <div class="glass-card" style="margin-top: 2rem;">
+                <div class="form-header">
+                    <i class="fas fa-eye"></i>
+                    <h3>Preview</h3>
+                </div>
+                <div class="student-preview">
+                    <div class="student-card preview-card">
+                        <div class="student-info">
+                            <div class="student-name">
+                                <i class="fas fa-user-circle"></i>
+                                <span id="preview-name"><%= student.name %></span>
+                            </div>
+                            <div class="student-detail">
+                                <i class="fas fa-envelope"></i>
+                                <span id="preview-email"><%= student.email || 'No email provided' %></span>
+                            </div>
+                            <div class="student-detail">
+                                <i class="fas fa-book"></i>
+                                <span id="preview-course"><%= student.course || 'No course specified' %></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal" class="modal">
+        <div class="modal-content">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h3>Confirm Delete</h3>
+            <p>Are you sure you want to delete <strong id="delete-student-name"></strong>?</p>
+            <p style="color: #64748b; font-size: 0.9rem;">This action cannot be undone.</p>
+            
+            <form id="delete-form" method="POST" style="display: none;">
+                <input type="hidden" name="_method" value="DELETE">
+            </form>
+            
+            <div class="modal-actions">
+                <button class="btn btn-danger" onclick="executeDelete()">
+                    <i class="fas fa-trash"></i> Delete Student
+                </button>
+                <button class="btn btn-secondary" onclick="closeModal()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Updating student...</p>
+        </div>
+    </div>
+
+    <script>
+        let deleteStudentId = null;
+
+        // Form validation and enhancement
+        document.getElementById('edit-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Clear previous errors
+            document.querySelectorAll('.form-error').forEach(error => {
+                error.textContent = '';
+                error.parentElement.querySelector('.form-control').classList.remove('error');
+            });
+
+            let isValid = true;
+
+            // Validate name
+            const name = document.getElementById('name').value.trim();
+            if (!name) {
+                showError('name', 'Please enter a student name');
+                isValid = false;
+            } else if (name.length < 2) {
+                showError('name', 'Name must be at least 2 characters long');
+                isValid = false;
+            }
+
+            // Validate email if provided
+            const email = document.getElementById('email').value.trim();
+            if (email && !isValidEmail(email)) {
+                showError('email', 'Please enter a valid email address');
+                isValid = false;
+            }
+
+            if (isValid) {
+                // Show loading
+                document.getElementById('loading-overlay').style.display = 'flex';
+                
+                // Submit form after short delay for better UX
+                setTimeout(() => {
+                    this.submit();
+                }, 500);
+            }
+        });
+
+        // Live preview updates
+        document.getElementById('name').addEventListener('input', function() {
+            document.getElementById('preview-name').textContent = this.value || 'Student Name';
+        });
+
+        document.getElementById('email').addEventListener('input', function() {
+            document.getElementById('preview-email').textContent = this.value || 'No email provided';
+        });
+
+        document.getElementById('course').addEventListener('input', function() {
+            document.getElementById('preview-course').textContent = this.value || 'No course specified';
+        });
+
+        function showError(fieldName, message) {
+            const errorElement = document.getElementById(fieldName + '-error');
+            const inputElement = document.getElementById(fieldName);
+            
+            errorElement.textContent = message;
+            inputElement.classList.add('error');
+            inputElement.focus();
+        }
+
+        function clearError(fieldName) {
+            const errorElement = document.getElementById(fieldName + '-error');
+            const inputElement = document.getElementById(fieldName);
+            
+            errorElement.textContent = '';
+            inputElement.classList.remove('error');
+        }
+
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        // Real-time validation
+        document.getElementById('name').addEventListener('blur', function() {
+            const name = this.value.trim();
+            if (name && name.length < 2) {
+                showError('name', 'Name must be at least 2 characters long');
+            } else {
+                clearError('name');
+            }
+        });
+
+        document.getElementById('email').addEventListener('blur', function() {
+            const email = this.value.trim();
+            if (email && !isValidEmail(email)) {
+                showError('email', 'Please enter a valid email address');
+            } else {
+                clearError('email');
+            }
+        });
+
+        // Delete functionality
+        function confirmDelete(studentId, studentName) {
+            deleteStudentId = studentId;
+            document.getElementById('delete-student-name').textContent = studentName;
+            document.getElementById('delete-form').action = `/delete/${studentId}`;
+            document.getElementById('delete-modal').style.display = 'flex';
+        }
+
+        function executeDelete() {
+            if (deleteStudentId) {
+                document.getElementById('delete-form').submit();
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('delete-modal').style.display = 'none';
+            deleteStudentId = null;
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('delete-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Auto-capitalize first letter of name
+        document.getElementById('name').addEventListener('input', function() {
+            this.value = this.value.replace(/\b\w/g, l => l.toUpperCase());
+        });
+
+        // Auto-format course name
+        document.getElementById('course').addEventListener('input', function() {
+            this.value = this.value.replace(/\b\w/g, l => l.toUpperCase());
+        });
+    </script>
+</body>
+</html>

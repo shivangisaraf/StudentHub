@@ -1,0 +1,220 @@
+
+<!-- views/index.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-graduation-cap"></i> Student Hub</h1>
+            <p>Modern Student Management System</p>
+        </div>
+
+        <div class="nav-section">
+            <a href="/add" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add New Student
+            </a>
+        </div>
+
+        <div class="main-content">
+            <div class="glass-card">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number"><%= students.length %></div>
+                        <div class="stat-label">Total Students</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">
+                            <%= [...new Set(students.filter(s => s.course).map(s => s.course))].length %>
+                        </div>
+                        <div class="stat-label">Active Courses</div>
+                    </div>
+                </div>
+
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" class="form-control" placeholder="Search students..." id="search-input">
+                </div>
+
+                <div id="students-container">
+                    <% if (students.length === 0) { %>
+                        <div class="empty-state">
+                            <i class="fas fa-user-graduate"></i>
+                            <h3>No students found</h3>
+                            <p>Add your first student to get started!</p>
+                            <a href="/add" class="btn btn-primary" style="margin-top: 1rem;">
+                                <i class="fas fa-plus"></i> Add Student
+                            </a>
+                        </div>
+                    <% } else { %>
+                        <div class="students-grid">
+                            <% students.forEach(student => { %>
+                                <div class="student-card" data-name="<%= student.name.toLowerCase() %>" 
+                                     data-email="<%= student.email ? student.email.toLowerCase() : '' %>" 
+                                     data-course="<%= student.course ? student.course.toLowerCase() : '' %>">
+                                    <div class="student-info">
+                                        <div class="student-name">
+                                            <i class="fas fa-user-circle"></i>
+                                            <%= student.name %>
+                                        </div>
+                                        <div class="student-detail">
+                                            <i class="fas fa-envelope"></i>
+                                            <%= student.email || 'No email provided' %>
+                                        </div>
+                                        <div class="student-detail">
+                                            <i class="fas fa-book"></i>
+                                            <%= student.course || 'No course specified' %>
+                                        </div>
+                                    </div>
+                                    <div class="student-actions">
+                                        <a href="/edit/<%= student._id %>" class="btn btn-secondary">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a>
+                                        <button class="btn btn-danger" onclick="confirmDelete('<%= student._id %>', '<%= student.name %>')">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            <% }) %>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal" class="modal">
+        <div class="modal-content">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h3>Confirm Delete</h3>
+            <p>Are you sure you want to delete <strong id="delete-student-name"></strong>?</p>
+            <p style="color: #64748b; font-size: 0.9rem;">This action cannot be undone.</p>
+            
+            <form id="delete-form" method="POST" style="display: none;">
+                <input type="hidden" name="_method" value="DELETE">
+            </form>
+            
+            <div class="modal-actions">
+                <button class="btn btn-danger" onclick="executeDelete()">
+                    <i class="fas fa-trash"></i> Delete Student
+                </button>
+                <button class="btn btn-secondary" onclick="closeModal()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toast-message">Success!</span>
+    </div>
+
+    <script>
+        let deleteStudentId = null;
+
+        // Search functionality
+        document.getElementById('search-input').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const studentCards = document.querySelectorAll('.student-card');
+            let visibleCount = 0;
+
+            studentCards.forEach(card => {
+                const name = card.dataset.name;
+                const email = card.dataset.email;
+                const course = card.dataset.course;
+                
+                if (name.includes(searchTerm) || email.includes(searchTerm) || course.includes(searchTerm)) {
+                    card.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Show/hide empty state for search results
+            const studentsGrid = document.querySelector('.students-grid');
+            const emptyState = document.querySelector('.empty-state');
+            
+            if (visibleCount === 0 && searchTerm.trim() !== '') {
+                if (studentsGrid) studentsGrid.style.display = 'none';
+                if (!document.querySelector('.search-empty-state')) {
+                    const searchEmpty = document.createElement('div');
+                    searchEmpty.className = 'empty-state search-empty-state';
+                    searchEmpty.innerHTML = `
+                        <i class="fas fa-search"></i>
+                        <h3>No results found</h3>
+                        <p>Try searching with different keywords.</p>
+                    `;
+                    document.getElementById('students-container').appendChild(searchEmpty);
+                }
+            } else {
+                if (studentsGrid) studentsGrid.style.display = 'grid';
+                const searchEmpty = document.querySelector('.search-empty-state');
+                if (searchEmpty) searchEmpty.remove();
+            }
+        });
+
+        function confirmDelete(studentId, studentName) {
+            deleteStudentId = studentId;
+            document.getElementById('delete-student-name').textContent = studentName;
+            document.getElementById('delete-form').action = `/delete/${studentId}`;
+            document.getElementById('delete-modal').style.display = 'flex';
+        }
+
+        function executeDelete() {
+            if (deleteStudentId) {
+                document.getElementById('delete-form').submit();
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('delete-modal').style.display = 'none';
+            deleteStudentId = null;
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('delete-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Show success message if redirected after an action
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('success')) {
+            const toast = document.getElementById('toast');
+            const message = document.getElementById('toast-message');
+            
+            switch(urlParams.get('success')) {
+                case 'added':
+                    message.textContent = 'Student added successfully!';
+                    break;
+                case 'updated':
+                    message.textContent = 'Student updated successfully!';
+                    break;
+                case 'deleted':
+                    message.textContent = 'Student deleted successfully!';
+                    break;
+                default:
+                    message.textContent = 'Operation completed successfully!';
+            }
+            
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+                // Clean up URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
