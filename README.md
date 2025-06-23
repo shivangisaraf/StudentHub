@@ -239,11 +239,9 @@ open coverage/lcov-report/index.html
 
 ### 📸 Screenshot of Test Coverage
 
-![Test Coverage Screenshot](./screenshots/coverage-screenshot.png)
+![Test Coverage Screenshot](https://github.com/shivangisaraf/shivangisaraf/blob/main/dem.jpg)
 
-*Replace the above image path with your actual screenshot after running tests.*
 
----
 
 ### ✅ Sample Test Commands
 
