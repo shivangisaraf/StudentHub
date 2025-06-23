@@ -6,8 +6,10 @@ A full-stack web application for managing student records built with Node.js, Ex
 ![Express.js](https://img.shields.io/badge/Express.js-404D59?style=for-the-badge)
 ![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)
 ![EJS](https://img.shields.io/badge/EJS-B4CA65?style=for-the-badge&logo=ejs&logoColor=black)
+
 ## 🌐 Live Demo
 **[🚀 View Live Application](https://studenthub-6uwd.onrender.com)**
+
 ## Features
 
 - **View Students**: Display all student records in a user-friendly interface
@@ -40,6 +42,10 @@ student-management-system/
 │   ├── css/
 │   ├── js/
 │   └── images/
+├── tests/                  # Test files directory
+│   ├── student.unit.test.js
+│   ├── student.integration.test.js
+│   └── student.api.test.js
 ├── .env                    # Environment variables
 ├── app.js                  # Main application file
 └── package.json
@@ -122,7 +128,10 @@ Add these to your `package.json`:
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "dev": "nodemon app.js"
+    "dev": "nodemon app.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "express": "^4.18.2",
@@ -131,7 +140,10 @@ Add these to your `package.json`:
     "dotenv": "^16.3.1"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.0.1",
+    "jest": "^29.5.0",
+    "supertest": "^6.3.3",
+    "mongodb-memory-server": "^8.12.2"
   }
 }
 ```
@@ -169,6 +181,139 @@ Add these to your `package.json`:
 | GET | `/edit/:id` | Show edit student form |
 | POST | `/edit/:id` | Update student |
 | POST | `/delete/:id` | Delete student |
+
+## 🧪 Testing
+
+This project includes a robust testing setup to ensure all functionalities are working as expected.
+
+### ✅ Types of Tests
+
+| Test Type     | Description                                                                 |
+|---------------|-----------------------------------------------------------------------------|
+| Unit Tests    | Test individual logic components like controllers or helper functions       |
+| Integration   | Test combined parts like route handlers and database interactions           |
+| API Tests     | End-to-end tests verifying API endpoints using Supertest                    |
+
+---
+
+### 🧰 Tools Used
+
+- **Jest** – JavaScript testing framework
+- **Supertest** – HTTP assertions for testing Express.js routes  
+- **mongodb-memory-server** (optional) – For in-memory DB testing
+
+---
+
+### 📦 File Structure of Tests
+
+```
+tests/
+├── student.unit.test.js         # Tests business logic independently
+├── student.integration.test.js  # Tests full route and DB flow
+└── student.api.test.js          # Tests API endpoints using Supertest
+```
+
+---
+
+### ▶️ Running Tests
+
+Make sure MongoDB is either mocked (for unit tests) or running (for integration/API tests):
+
+```bash
+npm test
+```
+
+For code coverage report:
+
+```bash
+npm test -- --coverage
+```
+
+### 📊 Test Coverage Report
+
+After running `npm test -- --coverage`, a detailed HTML report will be generated under the `coverage/` folder. Open it in your browser:
+
+```bash
+open coverage/lcov-report/index.html
+```
+
+### 📸 Screenshot of Test Coverage
+
+![Test Coverage Screenshot](./screenshots/coverage-screenshot.png)
+
+*Replace the above image path with your actual screenshot after running tests.*
+
+---
+
+### ✅ Sample Test Commands
+
+```bash
+# Run all tests
+npm test
+
+# Run a specific test file
+npx jest tests/student.unit.test.js
+
+# Show detailed coverage info
+npm test -- --coverage
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with verbose output
+npm test -- --verbose
+```
+
+### ✅ Test Summary
+
+| Test Suites | Tests Run | Status        | Coverage          |
+|-------------|-----------|---------------|-------------------|
+| 3 total     | 5 total   | ✅ All pass   | ~53% overall (improvable) |
+
+**💡 Tip:** Aim for >80% coverage in production-ready systems.
+
+---
+
+### 🔧 Test Environment Setup
+
+Create a `.env.test` file for test-specific environment variables:
+
+```bash
+NODE_ENV=test
+MONGODB_URI=mongodb://localhost:27017/test_database
+JWT_SECRET=test_jwt_secret_key
+PORT=3001
+```
+
+### 📝 Writing New Tests
+
+When adding new features, follow this testing checklist:
+
+- [ ] Write unit tests for new functions/methods
+- [ ] Add integration tests for new routes
+- [ ] Include API tests for new endpoints
+- [ ] Update test coverage thresholds if needed
+- [ ] Document any new testing patterns or utilities
+
+### 🚨 CI/CD Integration
+
+Tests are automatically run on:
+- Every pull request
+- Before deployment to staging/production
+- Nightly builds for regression testing
+
+```yaml
+# Example GitHub Actions workflow
+name: Tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: npm install
+      - run: npm test -- --coverage
+```
 
 ## EJS Templates
 
@@ -258,13 +403,19 @@ For production deployment, consider adding:
 - Run `npm install` to install all dependencies
 - Check `package.json` for correct versions
 
+**Test Issues**
+- Ensure test database is separate from development database
+- Check that all test dependencies are installed
+- Verify MongoDB Memory Server is working correctly
+
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+4. **Run tests to ensure everything works**: `npm test`
+5. Test thoroughly
+6. Submit a pull request
 
 ## License
 
